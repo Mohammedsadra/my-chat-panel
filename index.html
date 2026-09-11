@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OpenAI Chat Panel</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#0f1117;color:#f5f7fb;font-family:Tahoma,Arial,sans-serif}
+.app{max-width:900px;height:100vh;margin:auto;display:flex;flex-direction:column}
+header{padding:18px 20px;border-bottom:1px solid #292d38;font-size:20px;font-weight:700}
+#chat{flex:1;overflow:auto;padding:24px 16px;display:flex;flex-direction:column;gap:14px}
+.msg{max-width:78%;padding:12px 15px;border-radius:16px;white-space:pre-wrap;line-height:1.8}
+.user{align-self:flex-start;background:#2d6cdf}.assistant{align-self:flex-end;background:#20242e}
+.composer{display:flex;gap:10px;padding:14px;border-top:1px solid #292d38}
+textarea{flex:1;resize:none;background:#181b23;color:white;border:1px solid #343947;border-radius:14px;padding:12px;font:inherit;min-height:52px}
+button{border:0;border-radius:14px;padding:0 20px;background:#2d6cdf;color:#fff;font:inherit;cursor:pointer}
+button:disabled{opacity:.5}small{color:#8f96a6;padding:0 16px 10px}
+</style>
+</head>
+<body>
+<div class="app">
+<header>پنل چت OpenAI</header>
+<div id="chat"><div class="msg assistant">پیامت را بفرست.</div></div>
+<small id="status"></small>
+<div class="composer"><textarea id="input" placeholder="پیامت را بنویس..." rows="1"></textarea><button id="send">ارسال</button></div>
+</div>
+<script>
+const chat=document.querySelector("#chat"),input=document.querySelector("#input"),send=document.querySelector("#send"),status=document.querySelector("#status");
+const messages=[];
+function add(role,text){const e=document.createElement("div");e.className="msg "+role;e.textContent=text;chat.appendChild(e);chat.scrollTop=chat.scrollHeight}
+async function submit(){
+ const text=input.value.trim(); if(!text||send.disabled)return;
+ input.value="";add("user",text);messages.push({role:"user",content:text});send.disabled=true;status.textContent="در حال پاسخ...";
+ try{
+  const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages})});
+  const d=await r.json();if(!r.ok)throw Error(d.error||"خطا");
+  add("assistant",d.text||"پاسخی دریافت نشد.");messages.push({role:"assistant",content:d.text||""});
+ }catch(e){add("assistant","خطا: "+e.message)}finally{send.disabled=false;status.textContent="";input.focus()}
+}
+send.onclick=submit;input.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();submit()}});
+</script>
+</body></html>
